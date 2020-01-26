@@ -718,3 +718,26 @@ fn test_big_endian_deserialize_from_seed() {
 
     assert_eq!(seed_data, (0..100).collect::<Vec<_>>());
 }
+
+#[test]
+fn adjacetly_tagged_enums() {
+    use serde::{Serialize, Deserialize};
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    #[serde(tag = "mytype", content = "mydata", deny_unknown_fields)]
+    enum MyEnum {
+        VariantA(),
+        VariantB(),
+        VariantC,
+    }
+
+    let serialized = bincode::serialize(&MyEnum::VariantA()).unwrap();
+    let deserialized = bincode::deserialize::<MyEnum>(&serialized).unwrap();
+    assert_eq!(deserialized, MyEnum::VariantA());
+    let serialized = bincode::serialize(&MyEnum::VariantB()).unwrap();
+    let deserialized = bincode::deserialize::<MyEnum>(&serialized).unwrap();
+    assert_eq!(deserialized, MyEnum::VariantB());
+    let serialized = bincode::serialize(&MyEnum::VariantC).unwrap();
+    let deserialized = bincode::deserialize::<MyEnum>(&serialized).unwrap();
+    assert_eq!(deserialized, MyEnum::VariantC);
+}
