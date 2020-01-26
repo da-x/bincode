@@ -718,3 +718,45 @@ fn test_big_endian_deserialize_from_seed() {
 
     assert_eq!(seed_data, (0..100).collect::<Vec<_>>());
 }
+
+#[test]
+fn adjacently_tagged_enums() {
+    use serde::{Serialize, Deserialize};
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    #[serde(tag = "mytype", content = "mydata", deny_unknown_fields)]
+    enum MyEnum {
+        VariantA(),
+        // VariantD {
+        //     x: u32,
+        //     y: u32,
+        // },
+        //
+        // Still does not work, due to:
+        //
+        //    thread 'adjacently_tagged_enums' panicked at 'called `Result::unwrap()` on an `Err` value: Custom("invalid type: unit value, expected struct variant MyEnum::VariantD")', src/libcore/result.rs:1165:5
+        VariantB(u32),
+        VariantC,
+        VariantE(u32, u16),
+    }
+
+    let serialized = bincode::serialize(&MyEnum::VariantA()).unwrap();
+    let deserialized = bincode::deserialize::<MyEnum>(&serialized).unwrap();
+    assert_eq!(deserialized, MyEnum::VariantA());
+    let serialized = bincode::serialize(&MyEnum::VariantB(4)).unwrap();
+    let deserialized = bincode::deserialize::<MyEnum>(&serialized).unwrap();
+    assert_eq!(deserialized, MyEnum::VariantB(4));
+    let array = [
+        MyEnum::VariantA(),
+        MyEnum::VariantC,
+        MyEnum::VariantB(2),
+        MyEnum::VariantA(),
+        MyEnum::VariantE(1, 3),
+        MyEnum::VariantC,
+        // MyEnum::VariantD { x: 2, y: 4 }
+        MyEnum::VariantE(1, 5),
+    ];
+    let serialized = bincode::serialize(&array).unwrap();
+    let deserialized = bincode::deserialize::<[MyEnum; 7]>(&serialized).unwrap();
+    assert_eq!(deserialized, array);
+}

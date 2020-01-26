@@ -80,11 +80,11 @@ where
     type Error = Error;
 
     #[inline]
-    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        Err(Box::new(ErrorKind::DeserializeAnyNotSupported))
+        visitor.visit_unit()
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
@@ -359,12 +359,11 @@ where
         self.deserialize_tuple(fields.len(), visitor)
     }
 
-    fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        let message = "Bincode does not support Deserializer::deserialize_identifier";
-        Err(Error::custom(message))
+        self.deserialize_str(visitor)
     }
 
     fn deserialize_newtype_struct<V>(self, _name: &str, visitor: V) -> Result<V::Value>
